@@ -2,54 +2,44 @@ import { Injectable } from '@nestjs/common';
 import User, { Roles } from './user.model';
 import { CreateUserDto } from './Dtos/create-user.dto';
 import { UpdateUserDto } from './Dtos/update-user.dto';
+import { DatabaseService } from 'src/database/database.service';
+import { GetUserResponseDto } from './Dtos/get-user-response.dto';
+import { UserRole } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
-  private users: User[] = [
-    { id: 1, name: 'Alice', password: 'alice123', role: Roles.ADMIN },
-    { id: 2, name: 'Bob', password: 'bob123', role: Roles.USER },
-    { id: 3, name: 'Charlie', password: 'charlie123', role: Roles.USER },
-    { id: 4, name: 'Diana', password: 'diana123', role: Roles.GUEST },
-    { id: 5, name: 'Ethan', password: 'ethan123', role: Roles.USER },
-  ];
+  constructor(private readonly $context: DatabaseService) {}
 
-  public FindAll(role?: Roles): User[] {
+  async FindAll(role?: UserRole): Promise<GetUserResponseDto[]> {
     if (role) {
-      return this.users.filter((user) => user.role === role);
+      return await this.$context.user.findMany({ where: { role } });
     }
-    return this.users;
-  }
-  public FindById(id: number): User | null {
-    const user = this.users.find((user) => user.id === id);
-    return user || null;
+    return await this.$context.user.findMany();
   }
 
-  public CreateUser(user: CreateUserDto): User {
-    const userByHighestId = [...this.users].sort((a, b) => b.id - a.id);
-    const newUSer: User = {
-      id: userByHighestId[0].id + 1,
-      ...user,
-    };
-    this.users.push(newUSer);
-    return newUSer;
+  async FindById(id: number): Promise<GetUserResponseDto | null> {
+    const user = this.$context.user.findUnique({ where: { id } });
+    return (await user) || null;
   }
 
-  public UpdateUser(id: number, user: UpdateUserDto): User | null {
-    const index = this.users.findIndex((u) => u.id === id);
-    if (index === -1) {
-      return null;
-    }
-    const updatedUser: User = { ...this.users[index], ...user, id };
-    this.users[index] = updatedUser;
-    return updatedUser;
+  async CreateUser(user: CreateUserDto): Promise<GetUserResponseDto> {
+    return await this.$context.user.create({ data: user });
   }
 
-  public DeleteUser(id: number): boolean {
-    const index = this.users.findIndex((u) => u.id === id);
-    if (index === -1) {
-      return false;
-    }
-    this.users.splice(index, 1);
-    return true;
+  async UpdateUser(
+    id: number,
+    user: UpdateUserDto,
+  ): Promise<GetUserResponseDto | null> {
+    return await this.$context.user.update({
+      where: { id },
+      data: user,
+    });
+  }
+
+  async DeleteUser(id: number): Promise<boolean> {
+    return await this.$context.user
+      .delete({ where: { id } })
+      .then(() => true)
+      .catch(() => false);
   }
 }
