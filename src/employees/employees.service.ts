@@ -11,7 +11,9 @@ import { DeleteEmployeeResponseDto } from './dto/delete-employee-response.dto';
 @Injectable()
 export class EmployeesService {
   constructor(private readonly $context: DatabaseService) {}
-  async create(createEmployeeDto: CreateEmployeeDto) {
+  async create(
+    createEmployeeDto: CreateEmployeeDto,
+  ): Promise<CreatedEmployeeResponseDto> {
     return await this.$context.employee.create({
       data: createEmployeeDto,
     });
