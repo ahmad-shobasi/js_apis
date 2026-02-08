@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignUpRequestDto } from './dto/sign-up.dto';
@@ -6,6 +6,10 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import * as bcrypt from 'bcrypt';
 import { TokensDto } from './dto/tokens.dto';
 import { LoginRequestDto } from './dto/login.dto';
+import { JWT_REFRESH_SECRET, JWT_SECRET } from 'src/jwt.secret';
+import { User, UserRole } from '@prisma/client';
+import { v4 as uuid_v4 } from 'uuid';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -13,6 +17,11 @@ export class AuthService {
     private readonly jwt: JwtService,
   ) {}
 
+  async getUsers() {
+    return await this.$context.user.findMany();
+  }
+
+  // Signup function
   async signUp(dto: SignUpRequestDto): Promise<LoginResponseDto> {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const user = await this.$context.user.create({
@@ -23,8 +32,7 @@ export class AuthService {
         password: hashedPassword,
       },
     });
-    const tokens: TokensDto = await this.generateTokens(user.id, user.email);
-    await this.saveRefreshToken(user.id, tokens.refreshToken);
+    const tokens: TokensDto = await this.getTokens(user.id, user.email, user.role);
 
     return {
       tokens: tokens,
@@ -33,43 +41,31 @@ export class AuthService {
     };
   }
 
+  // Login function
   async login(dto: LoginRequestDto): Promise<LoginResponseDto> {
-    const user = this.$context.user.findUnique({
-      where: { email: dto.email },
-    });
-    let foundUser;
-    user.then((user) => {
-      foundUser = user;
-    });
+    const user = await this.getUserByEmail(dto.email);
 
-    const passwordMatch = await bcrypt.compare(
-      dto.password,
-      foundUser.password,
-    );
-    if (!user || !passwordMatch)
-      throw new UnauthorizedException('Invalid credentials');
-    const tokens = await this.generateTokens(foundUser.id, foundUser.email);
-    await this.saveRefreshToken(foundUser.id, tokens.refreshToken);
+    if (!user) throw new BadRequestException('no user with givin email');
 
+    const passwordMatch = await bcrypt.compare(dto.password, user.password);
+
+    if (!passwordMatch) throw new UnauthorizedException('Invalid password');
+
+    const tokens = await this.getTokens(user.id, user.email, user.role);
     return {
       tokens: tokens,
-      email: foundUser.email,
-      userName: foundUser.name,
+      email: user.email,
+      userName: user.name,
     };
   }
 
-  async refreshTokens(
-    userId: number,
-    refreshToken: string,
-  ): Promise<LoginResponseDto> {
-    const user = await this.$context.user.findUnique({
-      where: { id: userId },
-    });
-    const tokenMatch = await bcrypt.compare(refreshToken, user?.refreshToken!);
-    if (!user || !user.refreshToken || !tokenMatch)
-      throw new UnauthorizedException('Invalid refresh token');
-    const tokens = await this.generateTokens(user.id, user.email);
-    await this.saveRefreshToken(user.id, tokens.refreshToken);
+  // Refresh Tokens function
+  async refreshTokens(userId: number): Promise<LoginResponseDto> {
+    const user = await this.getUserById(userId);
+
+    if (!user) throw new NotFoundException();
+
+    const tokens = await this.getTokens(user.id, user.email, user.role);
 
     return {
       tokens: tokens,
@@ -78,39 +74,60 @@ export class AuthService {
     };
   }
 
+  // Logout function
   async logout(userId: number) {
     await this.$context.user.update({
-      where: { id: userId },
-      data: { refreshToken: null },
+      where: {
+        id: userId,
+      },
+      data: {
+        refreshTokenId: null,
+      },
     });
+  }
+
+  async deleteUser(id: number) {
+    const user = await this.$context.user.delete({
+      where: {
+        id,
+      },
+    });
+    if (!user) throw new NotFoundException();
+  }
+  async deleteAllUsers() {
+    await this.$context.user.deleteMany();
   }
 
   // ================== helpers ==================
-  private async generateTokens(
-    userId: number,
-    email: string,
-  ): Promise<TokensDto> {
-    const payload = { sub: userId, email };
 
-    const accessToken = await this.jwt.signAsync(payload, {
-      expiresIn: '15m',
-    });
+  private async getTokens(userId: number, email: string, role: UserRole) {
+    const refreshTokenId = uuid_v4();
 
-    const refreshToken = await this.jwt.signAsync(payload, {
-      expiresIn: '7d',
-    });
+    const [accessToken, refreshToken] = await Promise.all([
+      this.jwt.signAsync({ sub: userId, email, role }, { secret: JWT_SECRET, expiresIn: '15m' }),
+      this.jwt.signAsync({ sub: userId, jti: refreshTokenId }, { secret: JWT_REFRESH_SECRET, expiresIn: '7d' }),
+    ]);
 
-    return {
-      accessToken: accessToken,
-      refreshToken: refreshToken,
-    };
-  }
-
-  private async saveRefreshToken(userId: number, refreshToken: string) {
-    const hashed = await bcrypt.hash(refreshToken, 10);
+    // Update the generated refresh Id so the context will create new session.
     await this.$context.user.update({
       where: { id: userId },
-      data: { refreshToken: hashed },
+      data: { refreshTokenId },
     });
+
+    return { accessToken, refreshToken };
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const user = await this.$context.user.findUnique({
+      where: { email },
+    });
+    return user;
+  }
+
+  async getUserById(id: number): Promise<User | null> {
+    const user = await this.$context.user.findUnique({
+      where: { id },
+    });
+    return user;
   }
 }
