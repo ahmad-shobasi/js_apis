@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { apiReference } from '@scalar/nestjs-api-reference';
+import { CustomExceptionFilter } from './common/filters/custom-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -37,6 +38,7 @@ async function bootstrap() {
       transform: true,
     }),
   );
+  app.useGlobalFilters(new CustomExceptionFilter());
   await app.listen(4000);
 }
 bootstrap();
