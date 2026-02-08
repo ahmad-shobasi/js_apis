@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 // Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
@@ -12,33 +9,35 @@ datasource db {
   provider = "postgresql"
 }
 
-model Employee {
-  id        Int      @id @default(autoincrement())
-  name      String
-  role      Role
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-enum Role {
-  ENGINEER
-  MANAGER
-  HR
-}
-
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String  @unique
-  password  String
-  role      UserRole
-  refreshToken String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             Int      @id @default(autoincrement())
+  name           String
+  email          String   @unique
+  password       String
+  role           UserRole
+  refreshTokenId String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // relations
+  tasks         Task[]
 }
 
 enum UserRole {
   ADMIN
   USER
   GUEST
+}
+
+model Task{
+ id           Int      @id @default(autoincrement())
+ title        String
+ completed    Boolean      @default(false)
+ createdAt    DateTime     @default(now()) 
+
+ // foreign key
+ userId       Int
+ user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+ @@index([userId])
 }

@@ -1,18 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
 import { DatabaseModule } from './database/database.module';
-import { EmployeesModule } from './employees/employees.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
+import { TasksModule } from './tasks/tasks.module';
 @Module({
   imports: [
-    UsersModule,
     DatabaseModule,
-    EmployeesModule,
     // Configuration module to load .env variables
     ConfigModule.forRoot({
       isGlobal: true,
@@ -33,8 +30,16 @@ import { AuthModule } from './auth/auth.module';
     ]),
 
     AuthModule,
+
+    TasksModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
