@@ -8,6 +8,7 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 import { CustomExceptionFilter } from './common/filters/custom-exception.filter';
+import { AppLoggerService } from './common/logger/logger.service';
 @Module({
   imports: [
     DatabaseModule,
@@ -45,6 +46,7 @@ import { CustomExceptionFilter } from './common/filters/custom-exception.filter'
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
+    AppLoggerService,
   ],
 })
 export class AppModule {}

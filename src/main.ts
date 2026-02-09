@@ -4,9 +4,13 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ValidationPipe } from '@nestjs/common';
 import { apiReference } from '@scalar/nestjs-api-reference';
 import { CustomExceptionFilter } from './common/filters/custom-exception.filter';
+import { AppLoggerService } from './common/logger/logger.service';
+import { HttpLoggingInterceptor } from './common/logger/http-logging.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bufferLogs: true,
+  });
 
   // configure swagger UI.
   const config = new DocumentBuilder()
@@ -39,6 +43,12 @@ async function bootstrap() {
     }),
   );
   app.useGlobalFilters(new CustomExceptionFilter());
+
+  const logger = app.get(AppLoggerService);
+  app.useLogger(logger);
+
+  app.useGlobalInterceptors(new HttpLoggingInterceptor(app.get(AppLoggerService)));
+
   await app.listen(4000);
 }
 bootstrap();
