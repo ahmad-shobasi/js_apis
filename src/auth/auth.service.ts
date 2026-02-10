@@ -6,15 +6,16 @@ import { LoginResponseDto } from './dto/login-response.dto';
 import * as bcrypt from 'bcrypt';
 import { TokensDto } from './dto/tokens.dto';
 import { LoginRequestDto } from './dto/login.dto';
-import { JWT_REFRESH_SECRET, JWT_SECRET } from 'src/jwt.secret';
 import { User, UserRole } from '@prisma/client';
 import { v4 as uuid_v4 } from 'uuid';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly $context: DatabaseService,
     private readonly jwt: JwtService,
+    private readonly config: ConfigService,
   ) {}
 
   async getUsers() {
@@ -104,8 +105,14 @@ export class AuthService {
     const refreshTokenId = uuid_v4();
 
     const [accessToken, refreshToken] = await Promise.all([
-      this.jwt.signAsync({ sub: userId, email, role }, { secret: JWT_SECRET, expiresIn: '15m' }),
-      this.jwt.signAsync({ sub: userId, jti: refreshTokenId }, { secret: JWT_REFRESH_SECRET, expiresIn: '7d' }),
+      this.jwt.signAsync(
+        { sub: userId, email, role, sid: refreshTokenId },
+        { secret: this.config.get<string>('JWT_SECRET'), expiresIn: '15m' },
+      ),
+      this.jwt.signAsync(
+        { sub: userId, jti: refreshTokenId },
+        { secret: this.config.get<string>('JWT_REFRESH_SECRET'), expiresIn: '7d' },
+      ),
     ]);
 
     // Update the generated refresh Id so the context will create new session.
