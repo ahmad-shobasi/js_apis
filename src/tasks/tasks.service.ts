@@ -12,6 +12,7 @@ export class TasksService {
     return this.$context.task.create({
       data: {
         title: dto.title,
+        completed: dto.completed,
         userId,
       },
     });
