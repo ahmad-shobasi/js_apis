@@ -3,12 +3,15 @@ import 'winston-daily-rotate-file';
 
 const { combine, timestamp, printf, errors, json } = winston.format;
 
-const logFormat = printf(({ level, message, timestamp, stack, context }) => {
+const logFormat = printf((info) => {
+  const { level, message, timestamp, stack, context, ...meta } = info;
+
   return JSON.stringify({
     time: timestamp,
     level,
     context,
     message,
+    ...meta,
     stack,
   });
 });

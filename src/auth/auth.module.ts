@@ -5,12 +5,28 @@ import { JwtModule } from '@nestjs/jwt';
 import { DatabaseModule } from 'src/database/database.module';
 import { StrategiesModule } from './strategies/strategies.module';
 import { JwtStrategyService } from './strategies/jwt-strategy/jwt-strategy.service';
-import { JWT_SECRET } from 'src/jwt.secret';
 import { PassportModule } from '@nestjs/passport';
+import { ConfigService } from '@nestjs/config';
 
 @Global()
 @Module({
-  imports: [DatabaseModule, PassportModule, JwtModule.register({}), StrategiesModule],
+  imports: [
+    DatabaseModule,
+    PassportModule,
+    StrategiesModule,
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET'),
+      }),
+    }),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_REFRESH_SECRET'),
+      }),
+    }),
+  ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategyService],
   exports: [AuthService],
