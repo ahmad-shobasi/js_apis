@@ -13,3 +13,18 @@ services:
     container_name: redis_gui
     ports:
       - '8001:5540'
+  postgres:
+    image: postgres:18
+    container_name: nest_postgres
+    environment:
+      POSTGRES_USER: ahmad-dev
+      POSTGRES_PASSWORD: 12345a
+      POSTGRES_DB: nestjs-db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    restart: always
+
+volumes:
+  postgres_data:
