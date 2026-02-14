@@ -14,16 +14,18 @@ import { ConfigService } from '@nestjs/config';
     DatabaseModule,
     PassportModule,
     StrategiesModule,
+
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET'),
+        secret: config.get<string>('jwt.accessSecret'),
       }),
     }),
+
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_REFRESH_SECRET'),
+        secret: config.get<string>('jwt.refreshSecret'),
       }),
     }),
   ],

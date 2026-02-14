@@ -12,6 +12,8 @@ import { CustomExceptionFilter } from './common/filters/custom-exception.filter'
 import { AppLoggerService } from './common/logger/logger.service';
 import { RequestContextMiddleware } from './common/middlewares/request-context.middleware';
 import { RedisCacheModule } from './redis-cache/redis-cache.module';
+import appConfig from './config/app.config';
+import { envValidation } from './config/env.validation';
 
 @Module({
   imports: [
@@ -19,6 +21,9 @@ import { RedisCacheModule } from './redis-cache/redis-cache.module';
     // Configuration module to load .env variables
     ConfigModule.forRoot({
       isGlobal: true,
+      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
+      load: [appConfig],
+      validationSchema: envValidation,
     }),
 
     // Configure rate limiting
