@@ -7,13 +7,17 @@ import { CustomExceptionFilter } from './common/filters/custom-exception.filter'
 import { AppLoggerService } from './common/logger/logger.service';
 import { HttpLoggingInterceptor } from './common/logger/http-logging.interceptor';
 import { ConfigService } from '@nestjs/config';
-
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
   });
   const appConfig = app.get(ConfigService);
-
+  // Use static folder path for uploaded images
+  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+    prefix: '/uploads/',
+  });
   // configure swagger UI.
   const config = new DocumentBuilder()
     .setTitle('Cats example')

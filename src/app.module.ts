@@ -5,7 +5,7 @@ import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 import { CustomExceptionFilter } from './common/filters/custom-exception.filter';
@@ -14,10 +14,20 @@ import { RequestContextMiddleware } from './common/middlewares/request-context.m
 import { RedisCacheModule } from './redis-cache/redis-cache.module';
 import appConfig from './config/app.config';
 import { envValidation } from './config/env.validation';
-
+import { UserProfileModule } from './user-profile/user-profile.module';
 @Module({
   imports: [
     DatabaseModule,
+
+    AuthModule,
+
+    TasksModule,
+
+    // Redis cache module with the configs.
+    RedisCacheModule,
+
+    UserProfileModule,
+
     // Configuration module to load .env variables
     ConfigModule.forRoot({
       isGlobal: true,
@@ -39,13 +49,6 @@ import { envValidation } from './config/env.validation';
         limit: 100,
       },
     ]),
-
-    AuthModule,
-
-    TasksModule,
-
-    // Redis cache module with the configs.
-    RedisCacheModule,
   ],
   controllers: [TestCacheController, AppController],
   providers: [
@@ -58,10 +61,6 @@ import { envValidation } from './config/env.validation';
       provide: APP_FILTER,
       useClass: CustomExceptionFilter,
     },
-    // {
-    //   provide: APP_INTERCEPTOR,
-    //   useClass: CacheInterceptor,
-    // },
     AppLoggerService,
   ],
 })

@@ -21,12 +21,26 @@ model User {
 
   // relations
   tasks         Task[]
+  profile       UserProfile?
 }
 
 enum UserRole {
   ADMIN
   USER
   GUEST
+}
+
+
+model UserProfile {
+  id          Int         @id @default(autoincrement())
+  avatarUrl    String?
+  createdAt    DateTime   @default(now())
+
+  // foreign key
+  userId      Int         @unique
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // @@index([userId])
 }
 
 model Task{
