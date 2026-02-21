@@ -9,6 +9,7 @@ import { LoginRequestDto } from './dto/login.dto';
 import { User, UserRole } from '@prisma/client';
 import { v4 as uuid_v4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +17,7 @@ export class AuthService {
     private readonly $context: DatabaseService,
     private readonly jwt: JwtService,
     private readonly config: ConfigService,
+    private mailService: MailService,
   ) {}
 
   async getUsers() {
@@ -33,6 +35,10 @@ export class AuthService {
         password: hashedPassword,
       },
     });
+    // Processing background job for sending email when registering user.
+    await this.mailService.sendWelcomeEmail(user.id, user.email);
+
+    // Generate tokens for the new user.
     const tokens: TokensDto = await this.getTokens(user.id, user.email, user.role);
 
     return {
