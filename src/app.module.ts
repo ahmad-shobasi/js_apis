@@ -1,7 +1,5 @@
 import { TestCacheController } from './redis-cache/test-cache.controller';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
@@ -15,6 +13,8 @@ import { RedisCacheModule } from './redis-cache/redis-cache.module';
 import appConfig from './config/app.config';
 import { envValidation } from './config/env.validation';
 import { UserProfileModule } from './user-profile/user-profile.module';
+import { QueueModule } from './queue/queue.module';
+import { MailModule } from './mail/mail.module';
 @Module({
   imports: [
     DatabaseModule,
@@ -27,6 +27,12 @@ import { UserProfileModule } from './user-profile/user-profile.module';
     RedisCacheModule,
 
     UserProfileModule,
+
+    // Queue module for background jobs.
+    QueueModule,
+
+    // Registering jobs modules.
+    MailModule,
 
     // Configuration module to load .env variables
     ConfigModule.forRoot({
@@ -50,9 +56,8 @@ import { UserProfileModule } from './user-profile/user-profile.module';
       },
     ]),
   ],
-  controllers: [TestCacheController, AppController],
+  controllers: [TestCacheController],
   providers: [
-    AppService,
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
