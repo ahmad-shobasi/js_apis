@@ -16,6 +16,7 @@ model User {
   password       String
   role           UserRole
   refreshTokenId String?
+  isVerified     Boolean?  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
