@@ -1,4 +1,15 @@
-import { Controller, Post, Body, Param, ValidationPipe, ParseIntPipe, Get, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  ValidationPipe,
+  ParseIntPipe,
+  Get,
+  Req,
+  UseGuards,
+  Query,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignUpRequestDto } from './dto/sign-up.dto';
 import { LoginResponseDto } from './dto/login-response.dto';
@@ -27,7 +38,7 @@ export class AuthController {
 
   @Post('signup')
   @ApiBody({ type: SignUpRequestDto })
-  async signUp(@Body(ValidationPipe) dto: SignUpRequestDto): Promise<LoginResponseDto> {
+  async signUp(@Body(ValidationPipe) dto: SignUpRequestDto) {
     return await this.authService.signUp(dto);
   }
 
@@ -41,6 +52,11 @@ export class AuthController {
   @Post('refresh')
   async refreshToken(@CurrentUser() user): Promise<LoginResponseDto> {
     return await this.authService.refreshTokens(user.id);
+  }
+
+  @Post('verify-account')
+  async verifyAccount(@Query('token') token: string) {
+    await this.authService.verifyAccount(token);
   }
 
   @UseGuards(JwtAuthGuard)

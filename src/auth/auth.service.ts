@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { DatabaseService } from 'src/database/database.service';
 import { JwtService } from '@nestjs/jwt';
 import { SignUpRequestDto } from './dto/sign-up.dto';
@@ -10,6 +16,7 @@ import { User, UserRole } from '@prisma/client';
 import { v4 as uuid_v4 } from 'uuid';
 import { ConfigService } from '@nestjs/config';
 import { MailService } from 'src/mail/mail.service';
+import { VERIFY_TOKEN_SECRET } from 'src/mail/mail.constant';
 
 @Injectable()
 export class AuthService {
@@ -25,7 +32,7 @@ export class AuthService {
   }
 
   // Signup function
-  async signUp(dto: SignUpRequestDto): Promise<LoginResponseDto> {
+  async signUp(dto: SignUpRequestDto) {
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const user = await this.$context.user.create({
       data: {
@@ -37,15 +44,6 @@ export class AuthService {
     });
     // Processing background job for sending email when registering user.
     await this.mailService.sendWelcomeEmail(user.id, user.email);
-
-    // Generate tokens for the new user.
-    const tokens: TokensDto = await this.getTokens(user.id, user.email, user.role);
-
-    return {
-      tokens: tokens,
-      email: user.email,
-      userName: user.name,
-    };
   }
 
   // Login function
@@ -57,6 +55,8 @@ export class AuthService {
     const passwordMatch = await bcrypt.compare(dto.password, user.password);
 
     if (!passwordMatch) throw new UnauthorizedException('Invalid password');
+
+    if (!user.isVerified) throw new ForbiddenException('Email not verified');
 
     const tokens = await this.getTokens(user.id, user.email, user.role);
     return {
@@ -79,6 +79,23 @@ export class AuthService {
       email: user.email,
       userName: user.name,
     };
+  }
+
+  // Verify Account function
+  async verifyAccount(token: string) {
+    const { sub } = await this.jwt.verifyAsync(token, { secret: VERIFY_TOKEN_SECRET });
+    const user = await this.getUserById(sub);
+
+    if (!user) throw new NotFoundException();
+
+    if (!sub) throw new BadRequestException('Invalid token');
+
+    if (user.isVerified) throw new BadRequestException('Account already verified');
+
+    await this.$context.user.update({
+      where: { id: user.id },
+      data: { isVerified: true },
+    });
   }
 
   // Logout function
