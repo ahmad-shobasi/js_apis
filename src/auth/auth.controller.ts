@@ -54,9 +54,10 @@ export class AuthController {
     return await this.authService.refreshTokens(user.id);
   }
 
-  @Post('verify-account')
+  @Get('verify-account')
   async verifyAccount(@Query('token') token: string) {
     await this.authService.verifyAccount(token);
+    return { message: 'Account verified successfully.' };
   }
 
   @UseGuards(JwtAuthGuard)
