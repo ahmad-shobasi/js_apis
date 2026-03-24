@@ -1,4 +1,3 @@
-import { TestCacheController } from './redis-cache/test-cache.controller';
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
@@ -56,7 +55,6 @@ import { MailModule } from './mail/mail.module';
       },
     ]),
   ],
-  controllers: [TestCacheController],
   providers: [
     {
       provide: APP_GUARD,

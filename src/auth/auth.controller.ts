@@ -25,11 +25,6 @@ import { UserRoleGuard } from './strategies/user-role/user-role.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get()
-  async getUsers() {
-    return await this.authService.getUsers();
-  }
-
   @UseGuards(JwtAuthGuard)
   @Get('user')
   async getUserByEmail(@Req() req) {

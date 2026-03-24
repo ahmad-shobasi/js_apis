@@ -13,7 +13,6 @@ export class DatabaseService extends PrismaClient implements OnModuleInit {
     super({
       adapter: pool,
     });
-    console.log(config);
   }
   async onModuleInit() {
     await this.$connect();

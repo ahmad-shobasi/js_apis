@@ -32,9 +32,7 @@ export class MailProcessor extends WorkerHost {
   }
 
   @OnWorkerEvent('completed')
-  onCompleted(job: Job) {
-    console.log(`Job ${job.id} completed`);
-  }
+  onCompleted(job: Job) {}
 
   private async generateVerificationToken(userId: number): Promise<string> {
     return await this.jwt.signAsync({ sub: userId }, { secret: VERIFY_TOKEN_SECRET, expiresIn: '1d' });
@@ -52,8 +50,7 @@ export class MailProcessor extends WorkerHost {
 
     const port = this.config.get<number>('mail.smtp.port');
     const secure = this.config.get<boolean>('mail.smtp.secure');
-    const from =
-      this.config.get<string>('mail.from')?.trim() || user;
+    const from = this.config.get<string>('mail.from')?.trim() || user;
 
     const transporter = nodemailer.createTransport({
       host,
@@ -74,6 +71,5 @@ export class MailProcessor extends WorkerHost {
       <a href="${link}" style="color: blue; text-decoration: underline;">Verify Account</a>
       `,
     });
-    console.log(`email sent to ${to}`);
   }
 }
