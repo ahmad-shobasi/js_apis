@@ -18,17 +18,16 @@ export class UserRoleGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
+    const { user } = context.switchToHttp().getRequest();
+
+    if (!user) throw new ForbiddenException('no user found.');
 
     // No roles required.
     if (!requiredRoles) return true;
 
-    const { user } = context.switchToHttp().getRequest();
-
     const userLevel = roleHierarchy[user.role];
 
     const hasPermission = requiredRoles.some((role) => userLevel >= roleHierarchy[role]);
-
-    if (!user) throw new ForbiddenException('no user found.');
 
     if (!requiredRoles.includes(user.role) || !hasPermission) throw new ForbiddenException('Insufficient permissions');
 
